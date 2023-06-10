@@ -1,0 +1,7 @@
+# blacklist everything
+**
+# whitelist
+!package.json
+!LICENSE
+!tsconfig.json
+!dist/**
