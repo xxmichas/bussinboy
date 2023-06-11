@@ -9,6 +9,7 @@ export const bussinboy = async (config: BussinboyConfig, stream: http2.ServerHtt
   new Promise<{ fields: BussinboyField[]; files: BussinboyFile[] }>(async (resolve, reject) => {
     // Set default limits
     const limits = config.limits ?? {};
+    const fieldNameSize = limits.fieldNameSize ?? 100;
     const totalFieldNamesSize = limits.totalFieldNamesSize ?? Infinity;
     const totalFieldsSize = limits.totalFieldsSize ?? Infinity;
     const totalFileSize = limits.totalFileSize ?? Infinity;
@@ -52,8 +53,11 @@ export const bussinboy = async (config: BussinboyConfig, stream: http2.ServerHtt
       handleError(error);
     });
 
-    bus.on("field", (name, value, fieldNameTruncated, valueTruncated, encoding, mimeType) => {
-      if (fieldNameTruncated) {
+    // fieldNameTruncated doesn't work in current version of @fastify/busboy
+    bus.on("field", (name, value, _fieldNameTruncated, valueTruncated, encoding, mimeType) => {
+      const fieldNameByteLength = Buffer.byteLength(name, "utf8");
+
+      if (fieldNameByteLength > fieldNameSize) {
         handleError(new BussinboyLimitError("Field name size limit reached", "fieldNameSizeLimit"));
         return;
       } else if (valueTruncated) {
@@ -61,7 +65,7 @@ export const bussinboy = async (config: BussinboyConfig, stream: http2.ServerHtt
         return;
       }
 
-      updateCurrentTotalFieldNamesSize(Buffer.byteLength(name, "utf8"));
+      updateCurrentTotalFieldNamesSize(fieldNameByteLength);
       updateCurrentTotalFieldsSize(Buffer.byteLength(value, "utf8"));
 
       fields.push({
