@@ -40,23 +40,22 @@ export type BussinboyField = {
 
 export type BussinboyFile = {
   buffer: Buffer;
-  fieldName: string;
+  fieldName: string | undefined;
   fileName: string;
   encoding: string;
   mimeType: string;
 };
 
-export enum BussinboyLimitCode {
-  fieldNameSizeLimit = "fieldNameSizeLimit",
-  fieldSizeLimit = "fieldSizeLimit",
-  fieldsLimit = "fieldsLimit",
-  fileSizeLimit = "fileSizeLimit",
-  filesLimit = "filesLimit",
-  partsLimit = "partsLimit",
-  totalFieldNamesSizeLimit = "totalFieldNamesSizeLimit",
-  totalFieldsSizeLimit = "totalFieldsSizeLimit",
-  totalFileSizeLimit = "totalFileSizeLimit",
-}
+export type BussinboyLimitCode =
+  | "fieldNameSizeLimit"
+  | "fieldSizeLimit"
+  | "fieldsLimit"
+  | "fileSizeLimit"
+  | "filesLimit"
+  | "partsLimit"
+  | "totalFieldNamesSizeLimit"
+  | "totalFieldsSizeLimit"
+  | "totalFileSizeLimit";
 
 export class BussinboyLimitError extends Error {
   public code: BussinboyLimitCode;

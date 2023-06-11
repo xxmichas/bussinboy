@@ -3,11 +3,12 @@ import {
   BussinboyConfig,
   BussinboyField,
   BussinboyFile,
-  BussinboyLimitCode,
   BussinboyLimitError,
 } from "./utils";
 import { Readable } from "stream";
 import http2 from "http2";
+
+export * from "./utils";
 
 export const bussinboy = async (
   config: BussinboyConfig,
@@ -34,7 +35,7 @@ export const bussinboy = async (
           handleError(
             new BussinboyLimitError(
               "Total field names size limit reached",
-              BussinboyLimitCode.totalFieldNamesSizeLimit,
+              "totalFieldNamesSizeLimit",
             ),
           );
         }
@@ -45,7 +46,7 @@ export const bussinboy = async (
           handleError(
             new BussinboyLimitError(
               "Total fields size limit reached",
-              BussinboyLimitCode.totalFieldsSizeLimit,
+              "totalFieldsSizeLimit",
             ),
           );
         }
@@ -56,7 +57,7 @@ export const bussinboy = async (
           handleError(
             new BussinboyLimitError(
               "Total file size limit reached",
-              BussinboyLimitCode.totalFileSizeLimit,
+              "totalFileSizeLimit",
             ),
           );
         }
@@ -80,7 +81,7 @@ export const bussinboy = async (
           handleError(
             new BussinboyLimitError(
               "Field name size limit reached",
-              BussinboyLimitCode.fieldNameSizeLimit,
+              "fieldNameSizeLimit",
             ),
           );
           return;
@@ -88,7 +89,7 @@ export const bussinboy = async (
           handleError(
             new BussinboyLimitError(
               "Field value size limit reached",
-              BussinboyLimitCode.fieldSizeLimit,
+              "fieldSizeLimit",
             ),
           );
           return;
@@ -133,28 +134,19 @@ export const bussinboy = async (
 
       bus.on("fieldsLimit", () => {
         handleError(
-          new BussinboyLimitError(
-            "Fields limit reached",
-            BussinboyLimitCode.fieldsLimit,
-          ),
+          new BussinboyLimitError("Fields limit reached", "fieldsLimit"),
         );
       });
 
       bus.on("filesLimit", () => {
         handleError(
-          new BussinboyLimitError(
-            "Files limit reached",
-            BussinboyLimitCode.filesLimit,
-          ),
+          new BussinboyLimitError("Files limit reached", "filesLimit"),
         );
       });
 
       bus.on("partsLimit", () => {
         handleError(
-          new BussinboyLimitError(
-            "Parts limit reached",
-            BussinboyLimitCode.partsLimit,
-          ),
+          new BussinboyLimitError("Parts limit reached", "partsLimit"),
         );
       });
 
@@ -192,10 +184,7 @@ const busboyStreamToBuffer = async (
       limitReached = true;
 
       reject(
-        new BussinboyLimitError(
-          "File size limit reached",
-          BussinboyLimitCode.fileSizeLimit,
-        ),
+        new BussinboyLimitError("File size limit reached", "fileSizeLimit"),
       );
     });
 
