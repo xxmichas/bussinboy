@@ -29,6 +29,14 @@ export type BussinboyConfig = BusboyConfig & {
      */
     totalFileSize?: number | undefined;
   };
+  /**
+   * Custom error messages for limits.
+   */
+  errorMessages?: BussinboyErrorMessages;
+};
+
+export type BussinboyErrorMessages = {
+  [key in BussinboyLimitCode]?: string | undefined;
 };
 
 export type BussinboyField = {
