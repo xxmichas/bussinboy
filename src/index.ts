@@ -1,6 +1,7 @@
-import Busboy from "@fastify/busboy";
+import Busboy, { BusboyConfig } from "@fastify/busboy";
 import {
   BussinboyConfig,
+  BussinboyData,
   BussinboyErrorMessages,
   BussinboyField,
   BussinboyFile,
@@ -12,8 +13,23 @@ import http2 from "http2";
 
 export * from "./utils";
 
+const isContentTypeHeaderCorrect = (
+  config: BussinboyConfig,
+): config is BussinboyConfig & {
+  headers: http2.IncomingHttpHeaders & {
+    "content-type": string;
+  };
+} => {
+  return config.headers["content-type"]?.startsWith("multipart/form-data") === true;
+};
+
 export const bussinboy = async (config: BussinboyConfig, stream: http2.ServerHttp2Stream) =>
-  new Promise<{ fields: BussinboyField[]; files: BussinboyFile[] }>(async (resolve, reject) => {
+  new Promise<BussinboyData>((resolve, reject) => {
+    if (!isContentTypeHeaderCorrect(config)) {
+      reject(new TypeError("Content-Type header is not set to multipart/form-data"));
+      return;
+    }
+
     // Set default limits
     const limits = {
       fieldNameSize: config.limits?.fieldNameSize ?? 100,

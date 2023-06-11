@@ -1,6 +1,8 @@
 import { BusboyConfig } from "@fastify/busboy";
+import http2 from "http2";
 
-export type BussinboyConfig = BusboyConfig & {
+export type BussinboyConfig = Omit<BusboyConfig, "headers"> & {
+  headers: http2.IncomingHttpHeaders;
   /**
    * Various limits on incoming data.
    */
@@ -57,6 +59,11 @@ export type BussinboyFile = {
   fileName: string;
   encoding: string;
   mimeType: string;
+};
+
+export type BussinboyData = {
+  fields: BussinboyField[];
+  files: BussinboyFile[];
 };
 
 export type BussinboyLimitCode =
