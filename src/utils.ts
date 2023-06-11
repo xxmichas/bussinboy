@@ -1,38 +1,43 @@
 import { BusboyConfig } from "@fastify/busboy";
 
 export type BussinboyConfig = BusboyConfig & {
-  limits?: BusboyConfig["limits"] & {
-    /**
-     * Total max size of all field names (in bytes).
-     *
-     * **fieldNameSize** limit still applies to individual fields.
-     *
-     * @default Infinity
-     */
-    totalFieldNamesSize?: number | undefined;
-
-    /**
-     * Total max size of all field values (in bytes).
-     *
-     * **fieldSize** limit still applies to individual fields.
-     *
-     * @default Infinity
-     */
-    totalFieldsSize?: number | undefined;
-
-    /**
-     * Total max size of all files (in bytes).
-     *
-     * **fileSize** limit still applies to individual files.
-     *
-     * @default Infinity
-     */
-    totalFileSize?: number | undefined;
-  };
+  /**
+   * Various limits on incoming data.
+   */
+  limits?: BussinboyLimits;
   /**
    * Custom error messages for limits.
    */
   errorMessages?: BussinboyErrorMessages;
+};
+
+export type BussinboyLimits = BusboyConfig["limits"] & {
+  /**
+   * Total max size of all field names (in bytes).
+   *
+   * **fieldNameSize** limit still applies to individual fields.
+   *
+   * @default Infinity
+   */
+  totalFieldNamesSize?: number | undefined;
+
+  /**
+   * Total max size of all field values (in bytes).
+   *
+   * **fieldSize** limit still applies to individual fields.
+   *
+   * @default Infinity
+   */
+  totalFieldsSize?: number | undefined;
+
+  /**
+   * Total max size of all files (in bytes).
+   *
+   * **fileSize** limit still applies to individual files.
+   *
+   * @default Infinity
+   */
+  totalFileSize?: number | undefined;
 };
 
 export type BussinboyErrorMessages = {

@@ -1,5 +1,12 @@
 import Busboy from "@fastify/busboy";
-import { BussinboyConfig, BussinboyField, BussinboyFile, BussinboyLimitError } from "./utils";
+import {
+  BussinboyConfig,
+  BussinboyErrorMessages,
+  BussinboyField,
+  BussinboyFile,
+  BussinboyLimitError,
+  BussinboyLimits,
+} from "./utils";
 import { Readable } from "stream";
 import http2 from "http2";
 
@@ -8,11 +15,12 @@ export * from "./utils";
 export const bussinboy = async (config: BussinboyConfig, stream: http2.ServerHttp2Stream) =>
   new Promise<{ fields: BussinboyField[]; files: BussinboyFile[] }>(async (resolve, reject) => {
     // Set default limits
-    const limits = config.limits ?? {};
-    const fieldNameSize = limits.fieldNameSize ?? 100;
-    const totalFieldNamesSize = limits.totalFieldNamesSize ?? Infinity;
-    const totalFieldsSize = limits.totalFieldsSize ?? Infinity;
-    const totalFileSize = limits.totalFileSize ?? Infinity;
+    const limits = {
+      fieldNameSize: config.limits?.fieldNameSize ?? 100,
+      totalFieldNamesSize: config.limits?.totalFieldNamesSize ?? Infinity,
+      totalFieldsSize: config.limits?.totalFieldsSize ?? Infinity,
+      totalFileSize: config.limits?.totalFileSize ?? Infinity,
+    } satisfies BussinboyLimits;
 
     // Set default error messages
     const errorMessages = {
@@ -26,7 +34,7 @@ export const bussinboy = async (config: BussinboyConfig, stream: http2.ServerHtt
         config.errorMessages?.totalFieldNamesSizeLimit ?? "Total field names size limit reached",
       totalFieldsSizeLimit: config.errorMessages?.totalFieldsSizeLimit ?? "Total fields size limit reached",
       totalFileSizeLimit: config.errorMessages?.totalFileSizeLimit ?? "Total file size limit reached",
-    } satisfies BussinboyConfig["errorMessages"];
+    } satisfies BussinboyErrorMessages;
 
     const files: BussinboyFile[] = [];
     const fields: BussinboyField[] = [];
@@ -37,19 +45,19 @@ export const bussinboy = async (config: BussinboyConfig, stream: http2.ServerHtt
 
     const updateCurrentTotalFieldNamesSize = (size: number) => {
       currentTotalFieldNamesSize += size;
-      if (currentTotalFieldNamesSize > totalFieldNamesSize) {
+      if (currentTotalFieldNamesSize > limits.totalFieldNamesSize) {
         handleError(new BussinboyLimitError(errorMessages.totalFieldNamesSizeLimit, "totalFieldNamesSizeLimit"));
       }
     };
     const updateCurrentTotalFieldsSize = (size: number) => {
       currentTotalFieldsSize += size;
-      if (currentTotalFieldsSize > totalFieldsSize) {
+      if (currentTotalFieldsSize > limits.totalFieldsSize) {
         handleError(new BussinboyLimitError(errorMessages.totalFieldsSizeLimit, "totalFieldsSizeLimit"));
       }
     };
     const updateCurrentTotalFileSize = (size: number) => {
       currentTotalFileSize += size;
-      if (currentTotalFileSize > totalFileSize) {
+      if (currentTotalFileSize > limits.totalFileSize) {
         handleError(new BussinboyLimitError(errorMessages.totalFileSizeLimit, "totalFileSizeLimit"));
       }
     };
@@ -71,7 +79,7 @@ export const bussinboy = async (config: BussinboyConfig, stream: http2.ServerHtt
     bus.on("field", (name, value, _fieldNameTruncated, valueTruncated, encoding, mimeType) => {
       const fieldNameByteLength = Buffer.byteLength(name, "utf8");
 
-      if (fieldNameByteLength > fieldNameSize) {
+      if (fieldNameByteLength > limits.fieldNameSize) {
         handleError(new BussinboyLimitError(errorMessages.fieldNameSizeLimit, "fieldNameSizeLimit"));
         return;
       } else if (valueTruncated) {
