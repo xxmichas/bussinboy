@@ -1,7 +1,7 @@
-import busboy from "busboy";
+import { BusboyConfig } from "@fastify/busboy";
 
-export interface BussinboyConfig extends busboy.BusboyConfig {
-  limits?: busboy.Limits & {
+export type BussinboyConfig = BusboyConfig & {
+  limits?: BusboyConfig["limits"] & {
     /**
      * Total max size of all field names (in bytes).
      *
@@ -29,7 +29,7 @@ export interface BussinboyConfig extends busboy.BusboyConfig {
      */
     totalFileSize?: number | undefined;
   };
-}
+};
 
 export type BussinboyField = {
   name: string;
