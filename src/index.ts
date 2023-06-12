@@ -1,4 +1,4 @@
-import Busboy, { BusboyConfig } from "@fastify/busboy";
+import Busboy from "@fastify/busboy";
 import {
   BussinboyConfig,
   BussinboyData,
@@ -8,7 +8,6 @@ import {
   BussinboyLimitError,
   BussinboyLimits,
 } from "./utils";
-import { Readable } from "stream";
 import http2 from "http2";
 
 export * from "./utils";
@@ -114,20 +113,40 @@ export const bussinboy = async (config: BussinboyConfig, stream: http2.ServerHtt
       });
     });
 
-    bus.on("file", async (fieldName, stream, filename, encoding, mimeType) => {
-      try {
-        const buffer = await busboyStreamToBuffer(stream, updateCurrentTotalFileSize, errorMessages.fileSizeLimit);
+    bus.on("file", (fieldName, fileStream, filename, encoding, mimeType) => {
+      const data: Buffer[] = [];
+      let limitReached = false;
+
+      fileStream.on("data", (chunk: Buffer) => {
+        updateCurrentTotalFileSize(chunk.length);
+
+        data.push(chunk);
+      });
+
+      fileStream.on("end", () => {
+        if (limitReached) {
+          // handleError was already called in "limit" event
+          return;
+        }
 
         files.push({
-          buffer,
+          buffer: Buffer.concat(data),
           fieldName,
           fileName: filename,
           encoding: encoding,
           mimeType: mimeType,
         });
-      } catch (error) {
-        handleError(error as Error);
-      }
+      });
+
+      fileStream.on("limit", () => {
+        // busboy won't read the rest of the fileStream
+        // no further "data" events will be emitted
+        limitReached = true;
+
+        handleError(new BussinboyLimitError(errorMessages.fileSizeLimit, "fileSizeLimit"));
+      });
+
+      fileStream.on("error", (err) => handleError(err));
     });
 
     bus.on("finish", () => resolve({ fields, files }));
@@ -142,39 +161,3 @@ export const bussinboy = async (config: BussinboyConfig, stream: http2.ServerHtt
   });
 
 export default bussinboy;
-
-const busboyStreamToBuffer = async (
-  stream: Readable,
-  updateCurrentTotalFileSize: (size: number) => void,
-  fileSizeLimitErrorMessage: string,
-): Promise<Buffer> =>
-  new Promise<Buffer>((resolve, reject) => {
-    const data: Buffer[] = [];
-    let limitReached = false;
-
-    stream.on("data", (chunk: Buffer) => {
-      updateCurrentTotalFileSize(chunk.length);
-
-      data.push(chunk);
-    });
-
-    stream.on("end", () => {
-      if (limitReached) {
-        return;
-      }
-
-      resolve(Buffer.concat(data));
-    });
-
-    stream.on("limit", () => {
-      // busboy won't read the rest of the stream
-      // no further "data" events will be emitted
-      limitReached = true;
-
-      reject(new BussinboyLimitError(fileSizeLimitErrorMessage, "fileSizeLimit"));
-    });
-
-    stream.on("error", (err) => {
-      reject(err);
-    });
-  });
