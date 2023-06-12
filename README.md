@@ -16,7 +16,6 @@ A small promise based wrapper for [@fastify/busboy](https://github.com/fastify/b
 - Stops processing data after any of the limits are reached (doesn't waste CPU resources)
 - Respects "fieldNameSize" limit that [busboy](https://github.com/mscdex/busboy) and [@fastify/busboy](https://github.com/fastify/busboy) ignore (at least as of 12.06.2023)
 - Introduces 3 new limits:
-
   - totalFieldNamesSize
   - totalFieldsSize
   - totalFileSize
@@ -148,3 +147,7 @@ server.listen({ port: 3000 }, () => {
   console.log("Server listening on port 3000");
 });
 ```
+## 📚 TODO
+
+- [ ] Add tests
+- [ ] Add benchmarks
