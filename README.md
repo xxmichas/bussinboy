@@ -45,9 +45,19 @@ import http2 from "http2";
 import { readFileSync } from "fs";
 import path from "path";
 import { fileURLToPath } from "node:url";
-import { BussinboyErrorMessages, BussinboyLimitError, BussinboyLimits, bussinboy } from "@xxmichas/bussinboy/dist";
+import {
+  BussinboyErrorMessages,
+  BussinboyLimitError,
+  BussinboyLimits,
+  bussinboy
+} from "@xxmichas/bussinboy";
 
-const { HTTP2_HEADER_METHOD, HTTP2_HEADER_PATH, HTTP2_HEADER_STATUS, HTTP2_HEADER_CONTENT_TYPE } = http2.constants;
+const { 
+  HTTP2_HEADER_METHOD,
+  HTTP2_HEADER_PATH,
+  HTTP2_HEADER_STATUS,
+  HTTP2_HEADER_CONTENT_TYPE
+} = http2.constants;
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
