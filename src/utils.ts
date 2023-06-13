@@ -55,14 +55,14 @@ export type BussinboyField = {
 
 export type BussinboyFile = {
   buffer: Buffer;
-  fieldName: string | undefined;
+  fieldName: string;
   /**
    * **WARNING**: You should almost never use this value as-is
    * (especially if you are using preservePath: true in your config)
    * as it could contain malicious input. You are better off generating your own (safe) filenames,
    * or at the very least using a hash of the filename.
    */
-  fileName: string;
+  fileName: string | undefined;
   encoding: string;
   mimeType: string;
 };
@@ -72,7 +72,7 @@ export type BussinboyData = {
   files: BussinboyFile[];
 };
 
-export type BussinboyLimitCode =
+type BussinboyLimitCode =
   | "fieldNameSizeLimit"
   | "fieldSizeLimit"
   | "fieldsLimit"
@@ -83,10 +83,17 @@ export type BussinboyLimitCode =
   | "totalFieldsSizeLimit"
   | "totalFilesSizeLimit";
 
-export class BussinboyLimitError extends Error {
-  public code: BussinboyLimitCode;
+type BussinboyFormDataErrorCode = "fieldNameMissing";
 
-  constructor(message: string, code: BussinboyLimitCode) {
+export type BussinboyErrorCode = BussinboyLimitCode | BussinboyFormDataErrorCode;
+
+/**
+ * This error's message is safe to show to the end user.
+ */
+export class BussinboyEndUserError extends Error {
+  public code: BussinboyErrorCode;
+
+  constructor(message: string, code: BussinboyErrorCode) {
     super(message);
     this.code = code;
   }

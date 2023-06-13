@@ -2,10 +2,10 @@ import Busboy from "@fastify/busboy";
 import {
   BussinboyConfig,
   BussinboyData,
+  BussinboyEndUserError,
   BussinboyErrorMessages,
   BussinboyField,
   BussinboyFile,
-  BussinboyLimitError,
   BussinboyLimits,
 } from "./utils";
 import http2 from "http2";
@@ -61,19 +61,19 @@ export const bussinboy = async (config: BussinboyConfig, stream: http2.ServerHtt
     const updateCurrentTotalFieldNamesSize = (size: number) => {
       currentTotalFieldNamesSize += size;
       if (currentTotalFieldNamesSize > limits.totalFieldNamesSize) {
-        handleError(new BussinboyLimitError(errorMessages.totalFieldNamesSizeLimit, "totalFieldNamesSizeLimit"));
+        handleError(new BussinboyEndUserError(errorMessages.totalFieldNamesSizeLimit, "totalFieldNamesSizeLimit"));
       }
     };
     const updateCurrentTotalFieldsSize = (size: number) => {
       currentTotalFieldsSize += size;
       if (currentTotalFieldsSize > limits.totalFieldsSize) {
-        handleError(new BussinboyLimitError(errorMessages.totalFieldsSizeLimit, "totalFieldsSizeLimit"));
+        handleError(new BussinboyEndUserError(errorMessages.totalFieldsSizeLimit, "totalFieldsSizeLimit"));
       }
     };
     const updateCurrentTotalFilesSize = (size: number) => {
       currentTotalFilesSize += size;
       if (currentTotalFilesSize > limits.totalFilesSize) {
-        handleError(new BussinboyLimitError(errorMessages.totalFilesSizeLimit, "totalFilesSizeLimit"));
+        handleError(new BussinboyEndUserError(errorMessages.totalFilesSizeLimit, "totalFilesSizeLimit"));
       }
     };
 
@@ -86,19 +86,35 @@ export const bussinboy = async (config: BussinboyConfig, stream: http2.ServerHtt
       reject(error);
     };
 
+    stream.on("end", () => {
+      // reject promise on the next tick in case busboy
+      // wasn't able to process the form data and got stuck
+      // e.g. --boundary\r\nContent-Disposition: form-data; name=\"name\"\r\n\r\n--boundary--
+      // https://nodejs.org/docs/latest-v18.x/api/stream.html#event-end
+      setImmediate(() => {
+        handleError(new Error("Form data could not be processed"));
+      });
+    });
+
     bus.on("error", (error: Error) => {
       handleError(error);
     });
 
     // fieldNameTruncated doesn't work in current version of @fastify/busboy
-    bus.on("field", (name, value, _fieldNameTruncated, valueTruncated, encoding, mimeType) => {
+    bus.on("field", (name: string | undefined, value, _fieldNameTruncated, valueTruncated, encoding, mimeType) => {
+      if (name === undefined) {
+        // name can be undefined which violates RFC 7578 Section 4.2
+        handleError(new BussinboyEndUserError("Field name is missing", "fieldNameMissing"));
+        return;
+      }
+
       const fieldNameByteLength = Buffer.byteLength(name, "utf8");
 
       if (fieldNameByteLength > limits.fieldNameSize) {
-        handleError(new BussinboyLimitError(errorMessages.fieldNameSizeLimit, "fieldNameSizeLimit"));
+        handleError(new BussinboyEndUserError(errorMessages.fieldNameSizeLimit, "fieldNameSizeLimit"));
         return;
       } else if (valueTruncated) {
-        handleError(new BussinboyLimitError(errorMessages.fieldSizeLimit, "fieldSizeLimit"));
+        handleError(new BussinboyEndUserError(errorMessages.fieldSizeLimit, "fieldSizeLimit"));
         return;
       }
 
@@ -113,7 +129,13 @@ export const bussinboy = async (config: BussinboyConfig, stream: http2.ServerHtt
       });
     });
 
-    bus.on("file", (fieldName, fileStream, filename, encoding, mimeType) => {
+    bus.on("file", (fieldName: string | undefined, fileStream, fileName: string | undefined, encoding, mimeType) => {
+      if (fieldName === undefined) {
+        // name can be undefined which violates RFC 7578 Section 4.2
+        handleError(new BussinboyEndUserError("Field name is missing", "fieldNameMissing"));
+        return;
+      }
+
       const data: Buffer[] = [];
       let limitReached = false;
 
@@ -130,11 +152,11 @@ export const bussinboy = async (config: BussinboyConfig, stream: http2.ServerHtt
         }
 
         files.push({
-          buffer: Buffer.concat(data),
           fieldName,
-          fileName: filename,
+          fileName,
           encoding: encoding,
           mimeType: mimeType,
+          buffer: Buffer.concat(data),
         });
       });
 
@@ -143,7 +165,7 @@ export const bussinboy = async (config: BussinboyConfig, stream: http2.ServerHtt
         // no further "data" events will be emitted
         limitReached = true;
 
-        handleError(new BussinboyLimitError(errorMessages.fileSizeLimit, "fileSizeLimit"));
+        handleError(new BussinboyEndUserError(errorMessages.fileSizeLimit, "fileSizeLimit"));
       });
 
       fileStream.on("error", (err) => handleError(err));
@@ -151,11 +173,11 @@ export const bussinboy = async (config: BussinboyConfig, stream: http2.ServerHtt
 
     bus.on("finish", () => resolve({ fields, files }));
 
-    bus.on("fieldsLimit", () => handleError(new BussinboyLimitError(errorMessages.fieldsLimit, "fieldsLimit")));
+    bus.on("fieldsLimit", () => handleError(new BussinboyEndUserError(errorMessages.fieldsLimit, "fieldsLimit")));
 
-    bus.on("filesLimit", () => handleError(new BussinboyLimitError(errorMessages.filesLimit, "filesLimit")));
+    bus.on("filesLimit", () => handleError(new BussinboyEndUserError(errorMessages.filesLimit, "filesLimit")));
 
-    bus.on("partsLimit", () => handleError(new BussinboyLimitError(errorMessages.partsLimit, "partsLimit")));
+    bus.on("partsLimit", () => handleError(new BussinboyEndUserError(errorMessages.partsLimit, "partsLimit")));
 
     stream.pipe(bus);
   });

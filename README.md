@@ -13,6 +13,8 @@ A small promise based wrapper for [@fastify/busboy](https://github.com/fastify/b
 - 100% TypeScript
 - Supports CJS and ESM
 - Framework agnostic
+- Doesn't allow fields without a name [RFC 7578 Section 4.2](https://datatracker.ietf.org/doc/html/rfc7578#section-4.2)
+- Fixes an issue where [@fastify/busboy](https://github.com/fastify/busboy) becomes unresponsive when processing a field without a value
 - Stops processing data after any of the limits are reached (doesn't waste CPU resources)
 - Respects "fieldNameSize" limit that [busboy](https://github.com/mscdex/busboy) and [@fastify/busboy](https://github.com/fastify/busboy) ignore (at least as of 12.06.2023)
 - Introduces 3 new limits:
@@ -46,7 +48,7 @@ import path from "path";
 import { fileURLToPath } from "node:url";
 import {
   BussinboyErrorMessages,
-  BussinboyLimitError,
+  BussinboyEndUserError,
   BussinboyLimits,
   bussinboy
 } from "@xxmichas/bussinboy";
@@ -117,7 +119,7 @@ server.on("stream", async (stream, headers) => {
       let message = "Internal Server Error";
       let status = 500;
 
-      if (error instanceof BussinboyLimitError) {
+      if (error instanceof BussinboyEndUserError) {
         // It's safe to return the error message to the client
         message = error.message;
         status = 413;
@@ -147,7 +149,8 @@ server.listen({ port: 3000 }, () => {
   console.log("Server listening on port 3000");
 });
 ```
+
 ## 📚 TODO
 
-- [ ] Add tests
+- [ ] Add more tests
 - [ ] Add benchmarks
