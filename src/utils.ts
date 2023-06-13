@@ -39,7 +39,7 @@ export type BussinboyLimits = BusboyConfig["limits"] & {
    *
    * @default Infinity
    */
-  totalFileSize?: number | undefined;
+  totalFilesSize?: number | undefined;
 };
 
 export type BussinboyErrorMessages = {
@@ -56,6 +56,12 @@ export type BussinboyField = {
 export type BussinboyFile = {
   buffer: Buffer;
   fieldName: string | undefined;
+  /**
+   * **WARNING**: You should almost never use this value as-is
+   * (especially if you are using preservePath: true in your config)
+   * as it could contain malicious input. You are better off generating your own (safe) filenames,
+   * or at the very least using a hash of the filename.
+   */
   fileName: string;
   encoding: string;
   mimeType: string;
@@ -75,7 +81,7 @@ export type BussinboyLimitCode =
   | "partsLimit"
   | "totalFieldNamesSizeLimit"
   | "totalFieldsSizeLimit"
-  | "totalFileSizeLimit";
+  | "totalFilesSizeLimit";
 
 export class BussinboyLimitError extends Error {
   public code: BussinboyLimitCode;

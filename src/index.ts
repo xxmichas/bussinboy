@@ -34,7 +34,7 @@ export const bussinboy = async (config: BussinboyConfig, stream: http2.ServerHtt
       fieldNameSize: config.limits?.fieldNameSize ?? 100,
       totalFieldNamesSize: config.limits?.totalFieldNamesSize ?? Infinity,
       totalFieldsSize: config.limits?.totalFieldsSize ?? Infinity,
-      totalFileSize: config.limits?.totalFileSize ?? Infinity,
+      totalFilesSize: config.limits?.totalFilesSize ?? Infinity,
     } satisfies BussinboyLimits;
 
     // Set default error messages
@@ -48,7 +48,7 @@ export const bussinboy = async (config: BussinboyConfig, stream: http2.ServerHtt
       totalFieldNamesSizeLimit:
         config.errorMessages?.totalFieldNamesSizeLimit ?? "Total field names size limit reached",
       totalFieldsSizeLimit: config.errorMessages?.totalFieldsSizeLimit ?? "Total fields size limit reached",
-      totalFileSizeLimit: config.errorMessages?.totalFileSizeLimit ?? "Total file size limit reached",
+      totalFilesSizeLimit: config.errorMessages?.totalFilesSizeLimit ?? "Total file size limit reached",
     } satisfies BussinboyErrorMessages;
 
     const files: BussinboyFile[] = [];
@@ -56,7 +56,7 @@ export const bussinboy = async (config: BussinboyConfig, stream: http2.ServerHtt
 
     let currentTotalFieldNamesSize = 0;
     let currentTotalFieldsSize = 0;
-    let currentTotalFileSize = 0;
+    let currentTotalFilesSize = 0;
 
     const updateCurrentTotalFieldNamesSize = (size: number) => {
       currentTotalFieldNamesSize += size;
@@ -70,10 +70,10 @@ export const bussinboy = async (config: BussinboyConfig, stream: http2.ServerHtt
         handleError(new BussinboyLimitError(errorMessages.totalFieldsSizeLimit, "totalFieldsSizeLimit"));
       }
     };
-    const updateCurrentTotalFileSize = (size: number) => {
-      currentTotalFileSize += size;
-      if (currentTotalFileSize > limits.totalFileSize) {
-        handleError(new BussinboyLimitError(errorMessages.totalFileSizeLimit, "totalFileSizeLimit"));
+    const updateCurrentTotalFilesSize = (size: number) => {
+      currentTotalFilesSize += size;
+      if (currentTotalFilesSize > limits.totalFilesSize) {
+        handleError(new BussinboyLimitError(errorMessages.totalFilesSizeLimit, "totalFilesSizeLimit"));
       }
     };
 
@@ -118,7 +118,7 @@ export const bussinboy = async (config: BussinboyConfig, stream: http2.ServerHtt
       let limitReached = false;
 
       fileStream.on("data", (chunk: Buffer) => {
-        updateCurrentTotalFileSize(chunk.length);
+        updateCurrentTotalFilesSize(chunk.length);
 
         data.push(chunk);
       });
