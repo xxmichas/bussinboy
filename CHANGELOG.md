@@ -1,5 +1,12 @@
 # @xxmichas/bussinboy
 
+## 1.1.0
+
+### Minor Changes
+
+- 4695de0: fixed typo: "totalFileSize" -> "totalFilesSize"
+  added limits and custom error messages tests
+
 ## 1.0.2
 
 ### Patch Changes
