@@ -338,6 +338,36 @@ describe("limits and custom error messages", () => {
     const fileName = "test-file-name";
     const fileContent = "test-file-content";
 
+    it("should omit empty files", async () => {
+      const stream = createMultipartFormDataStream(
+        createMultipartFileChunk(fieldName, fileName, ""),
+        createMultipartFileChunk(fieldName, fileName, fileContent),
+      );
+
+      const data = await bussinboy(
+        {
+          limits: {
+            files: 2,
+          },
+          headers,
+        },
+        stream,
+      );
+
+      assert.deepEqual(data, {
+        fields: [],
+        files: [
+          {
+            fieldName,
+            fileName,
+            encoding: "7bit",
+            mimeType: "application/octet-stream",
+            buffer: Buffer.from(fileContent),
+          },
+        ],
+      });
+    });
+
     it("shouldn't throw if file count is within the limit", async () => {
       const stream = createMultipartFormDataStream(
         createMultipartFileChunk(fieldName, fileName, fileContent),

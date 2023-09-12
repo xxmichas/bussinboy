@@ -151,12 +151,19 @@ export const bussinboy = async (config: BussinboyConfig, stream: http2.ServerHtt
           return;
         }
 
+        const buffer = Buffer.concat(data);
+
+        if (buffer.byteLength === 0) {
+          // file is empty
+          return;
+        }
+
         files.push({
           fieldName,
           fileName,
           encoding: encoding,
           mimeType: mimeType,
-          buffer: Buffer.concat(data),
+          buffer,
         });
       });
 
