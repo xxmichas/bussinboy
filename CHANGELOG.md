@@ -1,5 +1,11 @@
 # @xxmichas/bussinboy
 
+## 1.3.0
+
+### Minor Changes
+
+- 4045c5b: omit empty files
+
 ## 1.2.0
 
 ### Minor Changes
