@@ -1,5 +1,11 @@
 # @xxmichas/bussinboy
 
+## 1.4.0
+
+### Minor Changes
+
+- ec6d32e: Updated dependencies
+
 ## 1.3.0
 
 ### Minor Changes
