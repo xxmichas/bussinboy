@@ -47,15 +47,17 @@ describe("invalid or malformed data", () => {
     }
   });
 
-  it("should ignore data if boundary is malformed", async () => {
+  it("should throw an error if boundary is malformed", async () => {
     const stream = createMultipartFormDataStream(createMultipartFieldChunk("test-name", "test-value"));
 
-    const data = await bussinboy({ headers: { "content-type": "multipart/form-data; boundary=malformed" } }, stream);
+    try {
+      await bussinboy({ headers: { "content-type": "multipart/form-data; boundary=malformed" } }, stream);
 
-    assert.deepEqual(data, {
-      fields: [],
-      files: [],
-    });
+      assert.fail("should have thrown");
+    } catch (error) {
+      console.log(error);
+      assert.strictEqual(error.message, "Unexpected end of multipart data");
+    }
   });
 
   it("should throw an error if field name is missing", async () => {
