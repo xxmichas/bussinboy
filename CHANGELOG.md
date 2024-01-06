@@ -1,5 +1,11 @@
 # @xxmichas/bussinboy
 
+## 2.0.0
+
+### Major Changes
+
+- a7a4951: Replaced http2 support with http1
+
 ## 1.4.0
 
 ### Minor Changes
