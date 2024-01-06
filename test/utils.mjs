@@ -32,7 +32,7 @@ export const createMultipartFileChunk = (name, fileName, value, mimeType = "appl
 
 /**
  * @param  {...string} chunks
- * @returns {import("http2").ServerHttp2Stream}
+ * @returns {import("http").IncomingMessage}
  */
 export const createMultipartFormDataStream = (...chunks) =>
   // @ts-ignore

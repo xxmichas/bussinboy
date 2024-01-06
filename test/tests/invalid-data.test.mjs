@@ -2,13 +2,7 @@
 import assert from "assert/strict";
 import { describe, it } from "node:test";
 import { bussinboy } from "../../dist/index.js";
-import {
-  headers,
-  createMultipartFieldChunk,
-  createMultipartFileChunk,
-  createMultipartFormDataStream,
-  boundary,
-} from "../utils.mjs";
+import { headers, createMultipartFieldChunk, createMultipartFormDataStream, boundary } from "../utils.mjs";
 
 describe("invalid or malformed data", () => {
   it("should throw an error if content-type header is missing", async () => {
