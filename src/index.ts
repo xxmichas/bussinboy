@@ -29,6 +29,8 @@ export const bussinboy = async (config: BussinboyConfig, req: http.IncomingMessa
     }
 
     // Set default limits
+    const bodySizeLimit = config.limits?.bodySize; // Kept outside of limits object, so that TypeScript knows it's a constant
+
     const limits = {
       fieldNameSize: config.limits?.fieldNameSize ?? 100,
       totalFieldNamesSize: config.limits?.totalFieldNamesSize ?? Infinity,
@@ -38,6 +40,7 @@ export const bussinboy = async (config: BussinboyConfig, req: http.IncomingMessa
 
     // Set default error messages
     const errorMessages = {
+      bodySizeLimit: config.errorMessages?.bodySizeLimit ?? "Content too large",
       fieldNameSizeLimit: config.errorMessages?.fieldNameSizeLimit ?? "Field name size limit reached",
       fieldSizeLimit: config.errorMessages?.fieldSizeLimit ?? "Field value size limit reached",
       fieldsLimit: config.errorMessages?.fieldsLimit ?? "Fields limit reached",
@@ -54,6 +57,7 @@ export const bussinboy = async (config: BussinboyConfig, req: http.IncomingMessa
     const fields: BussinboyField[] = [];
     let firstError: Error | undefined = undefined;
 
+    let bytesRead = 0;
     let currentTotalFieldNamesSize = 0;
     let currentTotalFieldsSize = 0;
     let currentTotalFilesSize = 0;
@@ -61,19 +65,19 @@ export const bussinboy = async (config: BussinboyConfig, req: http.IncomingMessa
     const updateCurrentTotalFieldNamesSize = (size: number) => {
       currentTotalFieldNamesSize += size;
       if (currentTotalFieldNamesSize > limits.totalFieldNamesSize) {
-        setError(new BussinboyEndUserError(errorMessages.totalFieldNamesSizeLimit, "totalFieldNamesSizeLimit"));
+        setError(new BussinboyEndUserError(errorMessages.totalFieldNamesSizeLimit, "totalFieldNamesSizeLimit", 413));
       }
     };
     const updateCurrentTotalFieldsSize = (size: number) => {
       currentTotalFieldsSize += size;
       if (currentTotalFieldsSize > limits.totalFieldsSize) {
-        setError(new BussinboyEndUserError(errorMessages.totalFieldsSizeLimit, "totalFieldsSizeLimit"));
+        setError(new BussinboyEndUserError(errorMessages.totalFieldsSizeLimit, "totalFieldsSizeLimit", 413));
       }
     };
     const updateCurrentTotalFilesSize = (size: number) => {
       currentTotalFilesSize += size;
       if (currentTotalFilesSize > limits.totalFilesSize) {
-        setError(new BussinboyEndUserError(errorMessages.totalFilesSizeLimit, "totalFilesSizeLimit"));
+        setError(new BussinboyEndUserError(errorMessages.totalFilesSizeLimit, "totalFilesSizeLimit", 413));
       }
     };
 
@@ -99,6 +103,11 @@ export const bussinboy = async (config: BussinboyConfig, req: http.IncomingMessa
     });
 
     bus.on("error", (error: Error) => {
+      if (bodySizeLimit !== undefined && bytesRead > bodySizeLimit) {
+        reject(new BussinboyEndUserError(errorMessages.bodySizeLimit, "bodySizeLimit", 413));
+        return;
+      }
+
       reject(error);
     });
 
@@ -106,17 +115,17 @@ export const bussinboy = async (config: BussinboyConfig, req: http.IncomingMessa
     bus.on("field", (name: string | undefined, value, _fieldNameTruncated, valueTruncated, encoding, mimeType) => {
       if (name === undefined) {
         // name can be undefined which violates RFC 7578 Section 4.2
-        setError(new BussinboyEndUserError("Field name is missing", "fieldNameMissing"));
+        setError(new BussinboyEndUserError("Field name is missing", "fieldNameMissing", 400));
         return;
       }
 
       const fieldNameByteLength = Buffer.byteLength(name, "utf8");
 
       if (fieldNameByteLength > limits.fieldNameSize) {
-        setError(new BussinboyEndUserError(errorMessages.fieldNameSizeLimit, "fieldNameSizeLimit"));
+        setError(new BussinboyEndUserError(errorMessages.fieldNameSizeLimit, "fieldNameSizeLimit", 413));
         return;
       } else if (valueTruncated) {
-        setError(new BussinboyEndUserError(errorMessages.fieldSizeLimit, "fieldSizeLimit"));
+        setError(new BussinboyEndUserError(errorMessages.fieldSizeLimit, "fieldSizeLimit", 413));
         return;
       }
 
@@ -134,7 +143,7 @@ export const bussinboy = async (config: BussinboyConfig, req: http.IncomingMessa
     bus.on("file", (fieldName: string | undefined, fileStream, fileName: string | undefined, encoding, mimeType) => {
       if (fieldName === undefined) {
         // name can be undefined which violates RFC 7578 Section 4.2
-        setError(new BussinboyEndUserError("Field name is missing", "fieldNameMissing"));
+        setError(new BussinboyEndUserError("Field name is missing", "fieldNameMissing", 400));
         return;
       }
 
@@ -174,7 +183,7 @@ export const bussinboy = async (config: BussinboyConfig, req: http.IncomingMessa
         // no further "data" events will be emitted
         limitReached = true;
 
-        setError(new BussinboyEndUserError(errorMessages.fileSizeLimit, "fileSizeLimit"));
+        setError(new BussinboyEndUserError(errorMessages.fileSizeLimit, "fileSizeLimit", 413));
       });
 
       fileStream.on("error", (err) => reject(err));
@@ -189,11 +198,24 @@ export const bussinboy = async (config: BussinboyConfig, req: http.IncomingMessa
       resolve({ fields, files });
     });
 
-    bus.on("fieldsLimit", () => setError(new BussinboyEndUserError(errorMessages.fieldsLimit, "fieldsLimit")));
+    bus.on("fieldsLimit", () => setError(new BussinboyEndUserError(errorMessages.fieldsLimit, "fieldsLimit", 413)));
 
-    bus.on("filesLimit", () => setError(new BussinboyEndUserError(errorMessages.filesLimit, "filesLimit")));
+    bus.on("filesLimit", () => setError(new BussinboyEndUserError(errorMessages.filesLimit, "filesLimit", 413)));
 
-    bus.on("partsLimit", () => setError(new BussinboyEndUserError(errorMessages.partsLimit, "partsLimit")));
+    bus.on("partsLimit", () => setError(new BussinboyEndUserError(errorMessages.partsLimit, "partsLimit", 413)));
+
+    if (bodySizeLimit !== undefined) {
+      req.on("data", (chunk: Buffer | string) => {
+        bytesRead += Buffer.byteLength(chunk, "utf8");
+
+        if (bytesRead > bodySizeLimit) {
+          req.unpipe(bus);
+          bus.destroy();
+
+          reject(new BussinboyEndUserError(errorMessages.bodySizeLimit, "bodySizeLimit", 413));
+        }
+      });
+    }
 
     req.pipe(bus);
   });

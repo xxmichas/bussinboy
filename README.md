@@ -15,10 +15,15 @@ A small promise based wrapper for [@fastify/busboy](https://github.com/fastify/b
 - Doesn't allow fields without a name [RFC 7578 Section 4.2](https://datatracker.ietf.org/doc/html/rfc7578#section-4.2)
 - Fixes an issue where [@fastify/busboy](https://github.com/fastify/busboy) becomes unresponsive when processing a field without a value
 - Respects "fieldNameSize" limit that [busboy](https://github.com/mscdex/busboy) and [@fastify/busboy](https://github.com/fastify/busboy) ignore (at least as of 12.06.2023)
-- Introduces 3 new limits:
+- Introduces 4 new limits:
+  - bodySize
   - totalFieldNamesSize
   - totalFieldsSize
   - totalFileSize
+- Stops processing data after bodySize limit is reached (doesn't waste resources). Note: If you choose to use "bodySize" limit, make sure to append a "Connection": "close" header to the response. Aborting an upload and sending a response early in http1, before a request is fully read may cause [most browsers](https://bugs.chromium.org/p/chromium/issues/detail?id=174906) to either:
+  - Continue uploading payload
+  - Hang and keep the connection open indefinitely
+  - Show ERR_CONNECTION_RESET page instead of the response body
 
 ## ⚠️ Drawbacks
 

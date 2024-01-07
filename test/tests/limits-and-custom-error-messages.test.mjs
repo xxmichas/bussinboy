@@ -830,4 +830,101 @@ describe("limits and custom error messages", () => {
       }
     });
   });
+
+  describe("bodySize", () => {
+    const fieldName = "test-name";
+    const fileName = "test-file-name";
+    const fileContent = "test-file-content";
+
+    it("shouldn't throw if body size is within the limit", async () => {
+      const bodySize = 348;
+      const stream = createMultipartFormDataStream(
+        createMultipartFileChunk(fieldName, fileName, fileContent),
+        createMultipartFileChunk(fieldName, fileName, fileContent),
+      );
+
+      const data = await bussinboy(
+        {
+          limits: {
+            bodySize: bodySize,
+          },
+          headers,
+        },
+        stream,
+      );
+
+      assert.deepEqual(data, {
+        fields: [],
+        files: [
+          {
+            fieldName,
+            fileName,
+            encoding: "7bit",
+            mimeType: "application/octet-stream",
+            buffer: Buffer.from(fileContent),
+          },
+          {
+            fieldName,
+            fileName,
+            encoding: "7bit",
+            mimeType: "application/octet-stream",
+            buffer: Buffer.from(fileContent),
+          },
+        ],
+      });
+    });
+
+    it("should throw if body size is over the limit", async () => {
+      const bodySize = 348;
+      const stream = createMultipartFormDataStream(
+        createMultipartFileChunk(fieldName, fileName, fileContent),
+        createMultipartFileChunk(fieldName, fileName, fileContent),
+      );
+
+      try {
+        await bussinboy(
+          {
+            limits: {
+              bodySize: bodySize - 1,
+            },
+            headers,
+          },
+          stream,
+        );
+
+        assert.fail("should have thrown");
+      } catch (error) {
+        assert.strictEqual(error.message, "Content too large");
+        assert.strictEqual(error.code, "bodySizeLimit");
+      }
+    });
+
+    it("should throw if body size is over the limit (custom error message)", async () => {
+      const bodySize = 348;
+      const stream = createMultipartFormDataStream(
+        createMultipartFileChunk(fieldName, fileName, fileContent),
+        createMultipartFileChunk(fieldName, fileName, fileContent),
+      );
+
+      try {
+        await bussinboy(
+          {
+            limits: {
+              bodySize: bodySize - 1,
+            },
+            errorMessages: {
+              bodySizeLimit: "CUSTOM: bodySizeLimit",
+            },
+            headers,
+          },
+          stream,
+        );
+
+        assert.fail("should have thrown");
+      } catch (error) {
+        assert.strictEqual(error.message, "CUSTOM: bodySizeLimit");
+        assert.strictEqual(error.code, "bodySizeLimit");
+      }
+    });
+  });
 });

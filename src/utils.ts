@@ -15,6 +15,12 @@ export type BussinboyConfig = Omit<BusboyConfig, "headers"> & {
 
 export type BussinboyLimits = BusboyConfig["limits"] & {
   /**
+   * Maximum number of bytes to process before rejecting the promise.
+   *
+   * Content-Length header cannot be trusted, so when this limit is provided all read bytes are counted.
+   */
+  bodySize?: number;
+  /**
    * Total max size of all field names (in bytes).
    *
    * **fieldNameSize** limit still applies to individual fields.
@@ -73,6 +79,7 @@ export type BussinboyData = {
 };
 
 type BussinboyLimitCode =
+  | "bodySizeLimit"
   | "fieldNameSizeLimit"
   | "fieldSizeLimit"
   | "fieldsLimit"
@@ -92,9 +99,11 @@ export type BussinboyErrorCode = BussinboyLimitCode | BussinboyFormDataErrorCode
  */
 export class BussinboyEndUserError extends Error {
   public code: BussinboyErrorCode;
+  public suggestedStatusCode: number;
 
-  constructor(message: string, code: BussinboyErrorCode) {
+  constructor(message: string, code: BussinboyErrorCode, suggestedStatusCode: number) {
     super(message);
     this.code = code;
+    this.suggestedStatusCode = suggestedStatusCode;
   }
 }
