@@ -1,5 +1,12 @@
 # @xxmichas/bussinboy
 
+## 2.1.0
+
+### Minor Changes
+
+- 3d3b7f7: Added bodySize limit
+  Added suggestedStatusCode to BussinboyEndUserError
+
 ## 2.0.0
 
 ### Major Changes
