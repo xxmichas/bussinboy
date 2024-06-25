@@ -4,7 +4,7 @@ A small promise based wrapper for [@fastify/busboy](https://github.com/fastify/b
 
 ## 🛠️ Requirements
 
-- Node.js >= 18
+- Node.js >= 20
 
 ## ✨ Features
 

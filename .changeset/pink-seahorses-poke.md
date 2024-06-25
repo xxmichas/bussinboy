@@ -3,3 +3,4 @@
 ---
 
 bump deps
+bump node to v20
