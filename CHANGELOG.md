@@ -1,5 +1,12 @@
 # @xxmichas/bussinboy
 
+## 2.1.1
+
+### Patch Changes
+
+- 99292e1: bump deps
+  bump node to v20
+
 ## 2.1.0
 
 ### Minor Changes
