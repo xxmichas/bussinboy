@@ -1,5 +1,11 @@
 # @xxmichas/bussinboy
 
+## 2.1.2
+
+### Patch Changes
+
+- 23f8059: added more tests
+
 ## 2.1.1
 
 ### Patch Changes
