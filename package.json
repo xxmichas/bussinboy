@@ -9,7 +9,7 @@
   },
   "license": "MIT",
   "author": "Michał Orkisz",
-  "version": "2.1.1",
+  "version": "2.1.2",
   "main": "dist/index.js",
   "module": "dist/index.mjs",
   "types": "dist/index.d.ts",
